@@ -87,7 +87,8 @@ function get_heightmap(z, x; chunks)
 
     chunk = chunks[z, x]
     if (chunk != nullTag )
-        if(chunk.payload[1].payload[7].name == "Heightmaps")
+        if(chunk.payload[1].payload[7].name == "Heightmaps" &&
+            length(chunk.payload[1].payload[7].payload) >= 4)
             world_surface = chunk.payload[1].payload[7].payload[4].payload
             return get9(world_surface)
         else
