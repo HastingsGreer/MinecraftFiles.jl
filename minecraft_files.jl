@@ -99,7 +99,15 @@ function get_heightmap(z, x; chunks)
     end
 end
 
-
+function getN(array, N, length)
+    #Get $length elements from an array of unsigned 32 bit ints,
+    #N bits at a time
+    bitA = BitArray(undef, length * N)
+    bitA.chunks .= array
+    return map(0:length - 1) do i
+        bitA[1 + N * i: N + N * i].chunks[1]
+    end
+end
 function get9(worldheight)
     bita = BitArray(undef, 16 * 16 * 9)
     bita.chunks .= worldheight
