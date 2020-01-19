@@ -45,12 +45,12 @@ function readTag(stream, the_type, indentations)
         end
     end
     if the_type == 0x0a
-        payload = Tag[]
+        payload = Base.ImmutableDict{String, Any}()
         newTag = Tag("", 1)
         while newTag != nullTag
             newTag = readNamedTag(stream, indentations + 1)
             if newTag != nullTag
-               push!(payload, newTag)
+               payload = Base.ImmutableDict(payload, newTag.name => newTag.payload)
             end
         end
     end
@@ -87,9 +87,9 @@ function get_heightmap(z, x; chunks)
 
     chunk = chunks[z, x]
     if (chunk != nullTag )
-        if(chunk.payload[1].payload[7].name == "Heightmaps" &&
-            length(chunk.payload[1].payload[7].payload) >= 4)
-            world_surface = chunk.payload[1].payload[7].payload[4].payload
+        if( "Heightmaps" in keys(chunk.payload["Level"]) &&
+            "WORLD_SURFACE" in keys(chunk.payload["Level"]["Heightmaps"]))
+            world_surface = chunk.payload["Level"]["Heightmaps"]["WORLD_SURFACE"]
             return get9(world_surface)
         else
             return zeros(UInt64, (16, 16)) .+ 32

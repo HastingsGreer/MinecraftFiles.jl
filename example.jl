@@ -8,7 +8,7 @@ function bigHeightMap(fname)
 end
 
 function bhm_coords(i, j)
-   fname = "mc/r." * string(i) * "." * string(j) * ".mca"
+   fname = "r." * string(i) * "." * string(j) * ".mca"
    if isfile(fname)
        return bigHeightMap(fname)
    end
@@ -36,36 +36,48 @@ end
 
 #println(sections)
 function getSection(chunk, i)
-   sections = chunk.payload[1].payload[12].payload
+   sections = chunk.payload["Level"]["Sections"]
    section = sections[i]
-   pallete = section[2].payload
+   pallete = section["Palette"]
 
 
    N = max(Int64(ceil(log2(length(pallete)))), 4)
 
-   blockstatesP = section[1].payload
+   blockstatesP = section["BlockStates"]
 
-   blockstates = reshape(getN(blockstatesP, N, 16 * 16 * 16), (16, 16, 16)) .!= 0
+   blockstates = reshape(Array{UInt8, 1}(getN(blockstatesP, N, 16 * 16 * 16)), (16, 16, 16))
    return blockstates
 end
 
 function namesFromPalette(tag)
-   return [filter((x) -> x.name == "Name", elem)[1].payload for elem in tag.payload]
+   return [elem["Name"] for elem in tag]
 end
 
-chunks = getChunks("mc\\r.0.0.mca")
+chunks = getChunks("r.0.0.mca")
 #heatmap(bhm_coords(0, 0), scale_plot=false)
 #
 #heatmap(get_heightmap(6, 6; chunks=chunks))
 
-chunk = chunks[6, 6]
 
-sections = chunk.payload[1].payload[12].payload
+function getAirArray(i,j; chunks=chunks)
+   chunk = chunks[i, j]
+   if(chunk != nullTag && "Sections" in keys(chunk.payload["Level"]))
+      sections = chunk.payload["Level"]["Sections"]
 
-mv = hcat((getSection(chunk, i) for i in 2:12)...)
+      mv = (cat((getSection(chunk, i) for i in 2:12)...; dims=3))
+   else
+      mv = zeros(UInt8, 16, 16, 176)
+   end
+   return mv
+end
 
+function getSlab(j; chunks=chunks)
+   return reduce(vcat, getAirArray.(j, 1:32; chunks=chunks))
+end
+using Makie
+#=
 scene = Scene()
-volume!(scene, mv .* 1.)
+volume!(scene, myv .* 1.)
 cc = cameracontrols(scene)
 cc.rotationspeed[] = .004
 update!(scene)
@@ -73,3 +85,4 @@ cc.eyeposition[] = .5 .* cc.eyeposition[] .+ .5 .* cc.lookat[]
 cc.eyeposition[] = .5 .* cc.eyeposition[] .+ .5 .* cc.lookat[]
 cc.eyeposition[] = .5 .* cc.eyeposition[] .+ .5 .* cc.lookat[]
 #scene
+=#
