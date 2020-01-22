@@ -37,29 +37,46 @@ end
 #println(sections)
 function getSection(chunk, i)
    sections = chunk.payload["Level"]["Sections"]
+   if length(sections) < i
+      return zeros(UInt8, 16, 16, 16)
+   end
    section = sections[i]
-   pallete = section["Palette"]
+   
+   if "Palette" in keys(section)
+           palette = section["Palette"]
+           
+           name_array = namesFromPalette(palette)
+           
+           println(name_array)
+           
+           
 
 
-   N = max(Int64(ceil(log2(length(pallete)))), 4)
+           N = max(Int64(ceil(log2(length(palette)))), 4)
 
-   blockstatesP = section["BlockStates"]
+           blockstatesP = section["BlockStates"]
 
-   blockstates = reshape(Array{UInt8, 1}(getN(blockstatesP, N, 16 * 16 * 16)), (16, 16, 16))
-   return blockstates
+           blockstates = reshape(Array{UInt8, 1}(getN(blockstatesP, N, 16 * 16 * 16)), (16, 16, 16))
+           
+           
+           return blockstates
+   else
+       return zeros(UInt8, 16, 16, 16)
+   end
 end
 
 function namesFromPalette(tag)
    return [elem["Name"] for elem in tag]
 end
 
-chunks = getChunks("r.0.0.mca")
+chunks = getChunks("../mcserver3/world/region/r.0.0.mca")
 #heatmap(bhm_coords(0, 0), scale_plot=false)
 #
 #heatmap(get_heightmap(6, 6; chunks=chunks))
 
 
 function getAirArray(i,j; chunks=chunks)
+
    chunk = chunks[i, j]
    if(chunk != nullTag && "Sections" in keys(chunk.payload["Level"]))
       sections = chunk.payload["Level"]["Sections"]
@@ -73,6 +90,10 @@ end
 
 function getSlab(j; chunks=chunks)
    return reduce(vcat, getAirArray.(j, 1:32; chunks=chunks))
+end
+
+function getAll(chunks)
+   return reduce(hcat, getSlab.(1:32; chunks=chunks))
 end
 using Makie
 #=
